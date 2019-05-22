@@ -3,6 +3,7 @@ import os
 import imageio
 from skimage.color import rgb2yuv
 from skimage.color import rgb2ycbcr
+from skimage.io import imsave
 import tensorflow as tf
 from scipy.misc import imread
 import numpy as np
@@ -19,7 +20,7 @@ def load_graph(frozen_graph_filename):
     return graph
 
 
-def decoder(loadmodel, loadfolder):
+def decoder(loadmodel, loadfolder, filename):
 
     graph = load_graph(loadmodel)
 
@@ -36,12 +37,15 @@ def decoder(loadmodel, loadfolder):
             z_val = pickle.load(f)
 
         reconframe_val = sess.run([reconframe], feed_dict={y_q: y_val, z_q: z_val})
+        reconframe_val = np.squeeze(reconframe_val[0]) * 255.
+        imsave(filename, reconframe_val)
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--DecoderModel', type=str, dest="loadmodel", default='./model.pb', help="encoder model")
     parser.add_argument('--loadpath', type=str, dest="loadfolder", default='pkl', help="load pkl folder")
+    parser.add_argument('--filename', type=str, dest="filename", default='./', help="save decompressed image")
 
     args = parser.parse_args()
     decoder(**vars(args))

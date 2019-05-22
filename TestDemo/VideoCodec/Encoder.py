@@ -30,9 +30,16 @@ def encoder(loadmodel, input_path, refer_path, outputfolder):
     mode = graph.get_tensor_by_name('import/Mode:0')
 
     with tf.Session(graph=graph) as sess:
+        try:
+          im1 = imread(input_path)
+          im2 = imread(refer_path)
+        except OSError:
+          im1 = np.load(input_path)
+          im2 = np.load(refer_path)
+        # some croppings
+        im1 = im1[:1024]
+        im2 = im2[:1024]
 
-        im1 = imread(input_path)
-        im2 = imread(refer_path)
         im1 = im1 / 255.0
         im2 = im2 / 255.0
         im1 = np.expand_dims(im1, axis=0)

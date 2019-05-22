@@ -1,6 +1,7 @@
 import pickle
 import tensorflow as tf
 from scipy.misc import imread
+from skimage.io import imsave
 import numpy as np
 from argparse import ArgumentParser
 
@@ -15,7 +16,7 @@ def load_graph(frozen_graph_filename):
     return graph
 
 
-def decoder(loadmodel, refer_path, outputfolder):
+def decoder(loadmodel, refer_path, outputfolder, filename):
     graph = load_graph(loadmodel)
 
     reconframe = graph.get_tensor_by_name('import/build_towers/tower_0/DVC_Model/train_net/ReconFrame:0')
@@ -34,8 +35,15 @@ def decoder(loadmodel, refer_path, outputfolder):
 
         with open(outputfolder + 'quantized_motion_feature.pkl', 'rb') as f:
             motion_feature = pickle.load(f)
+        
+        try:
+          im1 = imread(refer_path)
+        except OSError:
+          im1 = np.load(refer_path)
 
-        im1 = imread(refer_path)
+        # some croppings to fit the trained model
+        im1 = im1[:1024]
+
         im1 = im1 / 255.0
         im1 = np.expand_dims(im1, axis=0)
 
@@ -48,7 +56,8 @@ def decoder(loadmodel, refer_path, outputfolder):
                 previousImage: im1
             })
 
-        # print(recon_d)
+        recon_d = np.squeeze(recon_d[0]) * 255.
+        imsave(filename, recon_d)
 
 
 if __name__ == "__main__":
@@ -56,6 +65,7 @@ if __name__ == "__main__":
     parser.add_argument('--DecoderModel', type=str, dest="loadmodel", default='./model.pb', help="decoder model")
     parser.add_argument('--refer_frame', type=str, dest="refer_path", default='./im001.png', help="refer image path")
     parser.add_argument('--loadpath', type=str, dest="outputfolder", default='pkl', help="saved pkl file")
+    parser.add_argument('--filename', type=str, dest="filename", default='./', help="saved decompressed frame")
 
     args = parser.parse_args()
     decoder(**vars(args))
